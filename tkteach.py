@@ -54,13 +54,15 @@ class tkteach:
 		print("-->__init__")
 		
 		self.master = master
-		master.title("tkteach version 001")
+		self.default_size = (800, 400)
+
+		master.title("tkteach version 002")
 		
 		master.bind("<Key>", self.keyPressed)
 		
 		# Create GUI elements:
 		
-		self.titleLabel = tk.Label(master, text="tkteach version 001")
+		self.titleLabel = tk.Label(master, text="tkteach version 002")
 		self.titleLabel.pack()
 		
 		# BOTTOM "STATUS BAR" VVVVVVVVVVVVVVVVVVVVVVVVV
@@ -100,7 +102,7 @@ class tkteach:
 		self.frameMIDDLE = tk.Frame(master, bd=2)
 		self.frameMIDDLE.pack(side=tk.LEFT)
 		
-		self.imgStage = tk.Label(self.frameMIDDLE, text="")
+		self.imgStage = tk.Label(self.frameMIDDLE, text="", height=self.default_size[1], width=self.default_size[0])
 		self.imgStage.pack()
 		
 		self.imgFileName = tk.Label(self.frameMIDDLE, text="")
@@ -161,12 +163,21 @@ class tkteach:
 		
 		self.frameSeperator03 = tk.Frame(master,width=6,height=1)
 		self.frameSeperator03.pack(side=tk.LEFT)
+
+		self.select_defaults()
+	
+	def select_defaults(self):
+		print("-->select_defaults")
+		
+		if len(self.dataSetsListStr) == 1:
+			self.dataSetsListbox.selection_set(0)
+			self.loadDataSet()
 	
 	def initialize(self):
 		print("-->initialize")
 		
 		#Set parameters:
-		self.imgScaleFactor = 2		
+		self.imgScaleFactor = 1
 		
 		#Sub-initializations
 		self.initializeDatabase()
@@ -189,7 +200,7 @@ class tkteach:
 		print("-->initializeDatasets")
 		
 		#Get Datasets:
-		d = '.'
+		d = './ds'
 		self.dataSetsListDir = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d,o))]
 		self.dataSetsListStr = [x[2:] for x in self.dataSetsListDir]
 		if len(self.dataSetsListDir)==0:
@@ -243,7 +254,7 @@ class tkteach:
 			self.nextImage()
 			time.sleep(0.05)
 			self.nextImageButton.config(relief=tk.RAISED)
-		elif key.char == '+':
+		elif key.char == '+' or key.char == '=':
 			self.zoomInButton.config(relief=tk.SUNKEN)
 			self.zoomInButton.update_idletasks()
 			self.zoomIn()
@@ -281,7 +292,8 @@ class tkteach:
 		print("-->nextImage")
 		self.saveImageCategorization()
 		if self.imageSelection<(len(self.imageListDir)-1):
-			self.imageSelection+=1
+			self.imageSelection += 1
+			self.imgScaleFactor = 1
 			self.loadImage()
 		else:
 			self.statusBar.config(text="ERROR! Already at last image.")
@@ -292,7 +304,13 @@ class tkteach:
 		
 		#Draw image to screen:
 		imageFile = Image.open(self.imageListDir[self.imageSelection])
-		canvasImage = ImageTk.PhotoImage(imageFile.resize((imageFile.size[0]*self.imgScaleFactor,imageFile.size[1]*self.imgScaleFactor), Image.NEAREST))
+		
+		imageFile.thumbnail(self.default_size, Image.ANTIALIAS)
+
+		canvasImage = ImageTk.PhotoImage(imageFile.resize(
+			(int(imageFile.size[0] * self.imgScaleFactor), 
+			 int(imageFile.size[1] * self.imgScaleFactor)),
+			Image.NEAREST))
 		self.imgStage.config(image=canvasImage)
 		self.imgStage.image = canvasImage
 		self.imgFileName.config(text=str(self.imageListStr[self.imageSelection]))
@@ -389,17 +407,17 @@ class tkteach:
 		#Make image display larger.
 		#Since anti-aliasing is NOT used, only integer zoom factors are permitted.
 		print("-->zoomIn")
-		self.imgScaleFactor += 1
-		self.currentZoomLabel.config(text=' '+str(self.imgScaleFactor)+'X ')
+		self.imgScaleFactor += .2
+		self.currentZoomLabel.config(text=f' {self.imgScaleFactor:.2f}X ')
 		self.loadImage()
 	
 	def zoomOut(self):
 		#Make image display smaller
 		#Since anti-aliasing is NOT used, only integer zoom factors are permitted.
 		print("-->zoomOut")
-		if self.imgScaleFactor>1:
-			self.imgScaleFactor -= 1
-			self.currentZoomLabel.config(text=' '+str(self.imgScaleFactor)+'X ')
+		if self.imgScaleFactor > .2:
+			self.imgScaleFactor -= .2
+			self.currentZoomLabel.config(text=f' {self.imgScaleFactor:.2f}X ')
 			self.loadImage()
 	
 	def db_getImageID(self, imageStr):
