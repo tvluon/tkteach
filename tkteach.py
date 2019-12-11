@@ -1,6 +1,9 @@
 # tkteach.py
 # By Ryan M. Mones
 # www.Comet.cool
+#
+# Modified by Serhiy Shekhovtsov
+# 
 # Written on Python 2.7.13 (64-bit)
 # Tested on Python 3.6.1 (64-bit)
 #
@@ -11,7 +14,8 @@
 #  \____/\____/_/  /_/_____/ /_/ (_) \____/\____/\____/_____/
 #
 #
-#   Copyright 2018 Ryan M. Mones
+#   Original work Copyright 2018 Ryan M. Mones
+#   Modified work Copyright 2019 Serhiy Shekhovtsov
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
