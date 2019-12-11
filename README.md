@@ -4,7 +4,7 @@ A Super Fast Image Categorization Tool Written in Python
 
 tkteach is a graphical tool that lets you quickly flip through datasets of images to categorize them.
 
-Features
+Original features
 ----------
 
 - Easily customizable categories and keyboard shortcuts
@@ -14,6 +14,17 @@ Features
 - Images can be zoomed in or out
 - Allows multiple categorizations per image
 - Category labels can be reviewed from within the application
+
+![Screenshot](screenshot.PNG)
+
+Fixes and improvements
+----------
+
+- Added resizing of images to fit the maximum size
+- Fixed window size jumping
+- Made zoom in/zoom out more gentle
+- Zoom in by '+' **OR '='** (no need to hold the Shift button)
+- Datasets moved to /ds folder and added preselecting the dataset if it's the only one available
 
 ![Screenshot](screenshot.PNG)
 
