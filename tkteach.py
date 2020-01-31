@@ -163,18 +163,18 @@ class tkteach:
 
         # RIGHT FRAME VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
-        self.frameRIGHT2 = tk.Frame(master, bd=10)
+        self.frameRIGHT2 = tk.Frame(master, bd=2, width=24)
         self.frameRIGHT2.pack(side=tk.LEFT, fill=tk.Y)
 
-        self.frameRIGHT3 = tk.Frame(self.frameRIGHT2, bd=2, relief=tk.SUNKEN, bg='#FFFFFF')
+        self.frameRIGHT3 = tk.Frame(self.frameRIGHT2, bd=2, relief=tk.SUNKEN, bg='#FFFFFF', width=24)
         self.frameRIGHT3.pack(side=tk.LEFT)
 
-        self.frameRIGHT = tk.Frame(master, bd=2, relief=tk.SUNKEN)
+        self.frameRIGHT = tk.Frame(master, bd=2, relief=tk.SUNKEN, width=24)
         self.frameRIGHT.pack(side=tk.LEFT)
 
         tk.Label(self.frameRIGHT3, text="Caterory top01: ", bg='#FFFFFF').pack()
 
-        self.categoryTop01Label = tk.Label(self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911')
+        self.categoryTop01Label = tk.Label(self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911', width=24)
         self.categoryTop01Label.pack()
 
         tk.Label(self.frameRIGHT3, text="Score: ", bg='#FFFFFF').pack()
@@ -190,7 +190,7 @@ class tkteach:
         self.categoriesLabel.pack()
 
         self.categoriesListbox = tk.Listbox(
-            self.frameRIGHT, selectmode=tk.SINGLE, selectbackground='#119911', relief=tk.FLAT, bd=2)
+            self.frameRIGHT, selectmode=tk.SINGLE, selectbackground='#119911', relief=tk.FLAT, bd=2, width=24)
         for item in self.categories:
             self.categoriesListbox.insert(tk.END, item)
         self.categoriesListbox.pack()
@@ -384,7 +384,7 @@ class tkteach:
             self.categoriesListbox.selection_set(
                 self.categories.index(categoryName))
             self.categoryTop01Label.config(text=categoryName)
-            self.categoryTop01Score.config(text=category_score[1])
+            self.categoryTop01Score.config(text=f'{category_score[1]:.2f}')
         except ValueError:
             self.statusBar.config(
                 text="FATAL ERROR! Image is saved with invalid category.")
