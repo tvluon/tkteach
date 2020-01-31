@@ -60,15 +60,15 @@ class tkteach:
         print("-->__init__")
 
         self.master = master
-        self.default_size = (1000, 500)
+        self.default_size = (800, 500)
 
-        master.title("tkteach version 002")
+        master.title("tkteach version 003")
 
         master.bind("<Key>", self.keyPressed)
 
         # Create GUI elements:
 
-        self.titleLabel = tk.Label(master, text="tkteach version 002")
+        self.titleLabel = tk.Label(master, text="tkteach version 003")
         self.titleLabel.pack()
 
         # BOTTOM "STATUS BAR" VVVVVVVVVVVVVVVVVVVVVVVVV
@@ -163,22 +163,27 @@ class tkteach:
 
         # RIGHT FRAME VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
-        self.frameRIGHT2 = tk.Frame(master, bd=2, relief=tk.SUNKEN, bg='#FFFFFF')
-        self.frameRIGHT2.pack(side=tk.LEFT)
+        self.frameRIGHT2 = tk.Frame(master, bd=10)
+        self.frameRIGHT2.pack(side=tk.LEFT, fill=tk.Y)
+
+        self.frameRIGHT3 = tk.Frame(self.frameRIGHT2, bd=2, relief=tk.SUNKEN, bg='#FFFFFF')
+        self.frameRIGHT3.pack(side=tk.LEFT)
 
         self.frameRIGHT = tk.Frame(master, bd=2, relief=tk.SUNKEN)
         self.frameRIGHT.pack(side=tk.LEFT)
 
-        tk.Label(self.frameRIGHT2, text="Caterory top01: ", bg='#FFFFFF').pack()
+        tk.Label(self.frameRIGHT3, text="Caterory top01: ", bg='#FFFFFF').pack()
 
-        self.categoryTop01Label = tk.Label(self.frameRIGHT2, text='', bg='#FFFFFF', fg='#119911')
+        self.categoryTop01Label = tk.Label(self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911')
         self.categoryTop01Label.pack()
 
-        tk.Label(self.frameRIGHT2, text="Score: ", bg='#FFFFFF').pack()
+        tk.Label(self.frameRIGHT3, text="Score: ", bg='#FFFFFF').pack()
 
-        self.categoryTop01Score = tk.Label(self.frameRIGHT2, text='', bg='#FFFFFF', fg='#119911')
+        self.categoryTop01Score = tk.Label(self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911')
         self.categoryTop01Score.pack()
 
+        self.exportButton = tk.Button(self.frameRIGHT2, text='Export', command=self.export, pady=20)
+        self.exportButton.pack(side=tk.BOTTOM)
         ###
 
         self.categoriesLabel = tk.Label(self.frameRIGHT, text="Categories:")
@@ -196,12 +201,14 @@ class tkteach:
 
         self.loadDataSet()
 
-    # def select_defaults(self):
-    #     print("-->select_defaults")
-
-    #     if len(self.dataSetsListStr) == 1:
-    #         self.dataSetsListbox.selection_set(0)
-    #         self.loadDataSet()
+    def export(self):
+        print("-->exporting...")
+        labels = self.cursor.execute('SELECT image_id, category_id, score FROM labels').fetchall()
+        labeldf = pd.DataFrame(labels, columns=['image_id', 'category_id', 'category_top01_score'])
+        labeldf['image_path'] = labeldf['image_id'].apply(self.db_getImagePath)
+        labeldf['category_top01'] = labeldf['category_id'].apply(self.db_getCategoryName)
+        labeldf[['image_path', 'category_top01', 'category_top01_score']].to_csv('labels.csv', header=True, index=False)
+        print("-->exported")
 
     def initialize(self):
         print("-->initialize")
@@ -229,9 +236,9 @@ class tkteach:
         # self.cursor.execute('CREATE TABLE IF NOT EXISTS categories(id INTEGER NOT NULL PRIMARY KEY, categoryName TEXT UNIQUE)')
         # self.cursor.execute('CREATE TABLE IF NOT EXISTS labels(category_id INTEGER, image_id INTEGER, FOREIGN KEY(category_id) REFERENCES categories(id), FOREIGN KEY(image_id) REFERENCES images(id))')
         self.cursor.execute(
-            'CREATE TABLE IF NOT EXISTS images(id INTEGER NOT NULL PRIMARY KEY, imagePath TEXT UNIQUE)')
+            'CREATE TABLE IF NOT EXISTS images(id INTEGER NOT NULL PRIMARY KEY, image_path TEXT UNIQUE)')
         self.cursor.execute(
-            'CREATE TABLE IF NOT EXISTS categories(id INTEGER NOT NULL PRIMARY KEY, categoryName TEXT UNIQUE)')
+            'CREATE TABLE IF NOT EXISTS categories(id INTEGER NOT NULL PRIMARY KEY, category_name TEXT UNIQUE)')
         self.cursor.execute(
             'CREATE TABLE IF NOT EXISTS labels(category_id INTEGER, image_id INTEGER UNIQUE, score REAL, FOREIGN KEY(category_id) REFERENCES categories(id), FOREIGN KEY(image_id) REFERENCES images(id))')
         self.db.commit()
@@ -267,7 +274,7 @@ class tkteach:
         # Populate db table for categories:
         for category in self.categories:
             self.cursor.execute(
-                'INSERT OR IGNORE INTO categories(categoryName) VALUES(?)', (category,))
+                'INSERT OR IGNORE INTO categories(category_name) VALUES(?)', (category,))
         self.db.commit()
 
         # Parse Categories, set ad-hoc category key bindings:
@@ -372,8 +379,7 @@ class tkteach:
         category_score = self.cursor.fetchone()
 
         print(category_score)
-        self.cursor.execute('SELECT categoryName FROM categories WHERE id = ?', (category_score[0],))
-        categoryName = self.cursor.fetchone()[0]
+        categoryName = self.db_getCategoryName(category_score[0])
         try:
             self.categoriesListbox.selection_set(
                 self.categories.index(categoryName))
@@ -443,7 +449,7 @@ class tkteach:
 
             # Populate db table entries for all images in this dataSet (this can take a few seconds if over ~2,000 images):
             for imagei in range(len(self.imageListDir)):
-                self.cursor.execute('INSERT OR IGNORE INTO images(imagePath) VALUES(?)', (str(
+                self.cursor.execute('INSERT OR IGNORE INTO images(image_path) VALUES(?)', (str(
                     self.imageListDir[imagei]),))
 
             metadf.apply(
@@ -494,21 +500,22 @@ class tkteach:
     def db_getImageID(self, imageStr):
         # Get from database the image id
         self.cursor.execute(
-            'SELECT id FROM images WHERE imagePath = ?', (imageStr,))
+            'SELECT id FROM images WHERE image_path = ?', (imageStr,))
         return self.cursor.fetchone()[0]
 
     def db_getCategoryID(self, categoryStr):
         # Get from database the category id
         self.cursor.execute(
-            'SELECT id FROM categories WHERE categoryName = ?', (categoryStr,))
+            'SELECT id FROM categories WHERE category_name = ?', (categoryStr,))
         return self.cursor.fetchone()[0]
-
-    def db_getDataSetID(self, dataSetStr):
-        # Select from database the dataset id
-        self.cursor.execute(
-            'SELECT id FROM dataSets WHERE dataSetName = ?', (dataSetStr,))
+    
+    def db_getImagePath(self, imageId):
+        self.cursor.execute('SELECT image_path FROM images WHERE id = ?', (str(imageId),))
         return self.cursor.fetchone()[0]
-
+    
+    def db_getCategoryName(self, categoryId):
+        self.cursor.execute('SELECT category_name FROM categories WHERE id = ?', (str(categoryId),))
+        return self.cursor.fetchone()[0]
 
 if __name__ == "__main__":
     root = tk.Tk()

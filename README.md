@@ -26,7 +26,7 @@ Fixes and improvements
 - Zoom in by '+' **OR '='** (no need to hold the Shift button)
 - Datasets moved to /ds folder and added preselecting the dataset if it's the only one available
 
-![Screenshot](screenshot.PNG)
+![Screenshot](screenshot2.png)
 
 About
 -----------
