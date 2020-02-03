@@ -217,6 +217,7 @@ class tkteach:
         # self.datasetFilename = './dataset/lsc2020-visual-concepts.csv'
         self.datasetFilename = './dataset/labels.csv'
         self.datasetDir = './dataset/Volumes/Samsung_T5'
+        self.prevCategoryId = None
 
         # Set parameters:
         self.imgScaleFactor = 1
@@ -317,6 +318,9 @@ class tkteach:
             self.zoomOut()
             time.sleep(0.05)
             self.zoomOutButton.config(relief=tk.RAISED)
+        elif key.char == 's':
+            self.savePrevImageCategorization()
+            self.nextImage()
         else:
             # Check if this is an ad-hoc keybind for a category selection...
             try:
@@ -403,6 +407,32 @@ class tkteach:
         imageId = self.db_getImageID(self.imageListDir[self.imageSelection])
 
         categoryId = self.db_getCategoryID(self.categories[cati])
+
+        oldCategoryId = self.cursor.execute('SELECT category_id from labels where image_id = ?', (imageId, )).fetchone()[0]
+        
+        if (categoryId == oldCategoryId):
+            return
+
+        # Clear out existing category labels for the image...
+        self.cursor.execute('DELETE FROM labels WHERE image_id = ?', (imageId,))
+
+        # Insert new category labels for the image...
+        self.cursor.execute('INSERT INTO labels(image_id, category_id, score) VALUES(?, ?, ?)', (imageId, categoryId, 1,))
+        
+        self.db.commit()
+
+        self.prevCategoryId = categoryId
+
+    def savePrevImageCategorization(self):
+        print("-->savePrevImageCategorization")
+
+        if self.prevCategoryId is None:
+            print('---> Error: previous category id is None')
+            return
+
+        imageId = self.db_getImageID(self.imageListDir[self.imageSelection])
+
+        categoryId = self.prevCategoryId
 
         oldCategoryId = self.cursor.execute('SELECT category_id from labels where image_id = ?', (imageId, )).fetchone()[0]
         
