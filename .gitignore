@@ -1,4 +1,5 @@
 dataset/Volumes/
 dataset/lsc2020-visual-concepts.csv
+dataset/labels.csv
 storage.db
 labels.csv

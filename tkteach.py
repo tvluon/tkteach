@@ -206,7 +206,7 @@ class tkteach:
         labels = self.cursor.execute('SELECT image_id, category_id, score FROM labels').fetchall()
         labeldf = pd.DataFrame(labels, columns=['image_id', 'category_id', 'category_top01_score'])
         labeldf['image_path'] = labeldf['image_id'].apply(self.db_getImagePath)
-        labeldf['category_top01'] = labeldf['category_id'].apply(self.db_getCategoryName)
+        labeldf['category_top01'] = labeldf['category_id'].apply(self.db_getCategoryName).apply(lambda x: x[3:])
         labeldf[['image_path', 'category_top01', 'category_top01_score']].to_csv('labels.csv', header=True, index=False)
         print("-->exported")
 
@@ -214,7 +214,8 @@ class tkteach:
         print("-->initialize")
 
         self.catFilename = './dataset/categories_place365.txt'
-        self.datasetFilename = './dataset/lsc2020-visual-concepts.csv'
+        # self.datasetFilename = './dataset/lsc2020-visual-concepts.csv'
+        self.datasetFilename = './dataset/labels.csv'
         self.datasetDir = './dataset/Volumes/Samsung_T5'
 
         # Set parameters:
@@ -451,7 +452,6 @@ class tkteach:
             for imagei in range(len(self.imageListDir)):
                 self.cursor.execute('INSERT OR IGNORE INTO images(image_path) VALUES(?)', (str(
                     self.imageListDir[imagei]),))
-
             metadf.apply(
                 lambda row: self.cursor.execute(
                     'INSERT OR IGNORE INTO labels(category_id, image_id, score) VALUES(?, ?, ?)',
