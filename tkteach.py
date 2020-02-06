@@ -166,23 +166,34 @@ class tkteach:
         self.frameRIGHT2 = tk.Frame(master, bd=2, width=24)
         self.frameRIGHT2.pack(side=tk.LEFT, fill=tk.Y)
 
-        self.frameRIGHT3 = tk.Frame(self.frameRIGHT2, bd=2, relief=tk.SUNKEN, bg='#FFFFFF', width=24)
+        self.frameRIGHT3 = tk.Frame(
+            self.frameRIGHT2, bd=2, relief=tk.SUNKEN, bg='#FFFFFF', width=24)
         self.frameRIGHT3.pack(side=tk.LEFT)
 
         self.frameRIGHT = tk.Frame(master, bd=2, relief=tk.SUNKEN, width=24)
         self.frameRIGHT.pack(side=tk.LEFT)
 
+        
+        tk.Label(self.frameRIGHT3, text="Semantic: ", bg='#FFFFFF').pack()
+
+        self.semanticLabel = tk.Label(
+            self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911', width=24)
+        self.semanticLabel.pack()
+
         tk.Label(self.frameRIGHT3, text="Caterory top01: ", bg='#FFFFFF').pack()
 
-        self.categoryTop01Label = tk.Label(self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911', width=24)
+        self.categoryTop01Label = tk.Label(
+            self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911', width=24)
         self.categoryTop01Label.pack()
 
         tk.Label(self.frameRIGHT3, text="Score: ", bg='#FFFFFF').pack()
 
-        self.categoryTop01Score = tk.Label(self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911')
+        self.categoryTop01Score = tk.Label(
+            self.frameRIGHT3, text='', bg='#FFFFFF', fg='#119911')
         self.categoryTop01Score.pack()
 
-        self.exportButton = tk.Button(self.frameRIGHT2, text='Export', command=self.export, pady=20)
+        self.exportButton = tk.Button(
+            self.frameRIGHT2, text='Export', command=self.export, pady=20)
         self.exportButton.pack(side=tk.BOTTOM)
         ###
 
@@ -203,11 +214,15 @@ class tkteach:
 
     def export(self):
         print("-->exporting...")
-        labels = self.cursor.execute('SELECT image_id, category_id, score FROM labels').fetchall()
-        labeldf = pd.DataFrame(labels, columns=['image_id', 'category_id', 'category_top01_score'])
+        labels = self.cursor.execute(
+            'SELECT image_id, category_id, score FROM labels').fetchall()
+        labeldf = pd.DataFrame(
+            labels, columns=['image_id', 'category_id', 'category_top01_score'])
         labeldf['image_path'] = labeldf['image_id'].apply(self.db_getImagePath)
-        labeldf['category_top01'] = labeldf['category_id'].apply(self.db_getCategoryName).apply(lambda x: x[3:])
-        labeldf[['image_path', 'category_top01', 'category_top01_score']].to_csv('labels.csv', header=True, index=False)
+        labeldf['category_top01'] = labeldf['category_id'].apply(
+            self.db_getCategoryName).apply(lambda x: x[3:])
+        labeldf[['image_path', 'category_top01', 'category_top01_score']].to_csv(
+            'labels.csv', header=True, index=False)
         print("-->exported")
 
     def initialize(self):
@@ -215,7 +230,8 @@ class tkteach:
 
         self.catFilename = './dataset/categories_place365.txt'
         # self.datasetFilename = './dataset/lsc2020-visual-concepts.csv'
-        self.datasetFilename = './dataset/labels.csv'
+        # self.datasetFilename = './dataset/labels.csv'
+        self.datasetFilename = './dataset/unified_left_visual.csv'
         self.datasetDir = './dataset/Volumes/Samsung_T5'
         self.prevCategoryId = None
 
@@ -238,7 +254,7 @@ class tkteach:
         # self.cursor.execute('CREATE TABLE IF NOT EXISTS categories(id INTEGER NOT NULL PRIMARY KEY, categoryName TEXT UNIQUE)')
         # self.cursor.execute('CREATE TABLE IF NOT EXISTS labels(category_id INTEGER, image_id INTEGER, FOREIGN KEY(category_id) REFERENCES categories(id), FOREIGN KEY(image_id) REFERENCES images(id))')
         self.cursor.execute(
-            'CREATE TABLE IF NOT EXISTS images(id INTEGER NOT NULL PRIMARY KEY, image_path TEXT UNIQUE)')
+            'CREATE TABLE IF NOT EXISTS images(id INTEGER NOT NULL PRIMARY KEY, image_path TEXT UNIQUE, semantic_name TEXT)')
         self.cursor.execute(
             'CREATE TABLE IF NOT EXISTS categories(id INTEGER NOT NULL PRIMARY KEY, category_name TEXT UNIQUE)')
         self.cursor.execute(
@@ -360,7 +376,8 @@ class tkteach:
         print("-->loadImage")
 
         # Draw image to screen:
-        imageFile = Image.open(os.path.join(self.datasetDir, self.imageListDir[self.imageSelection]))
+        imageFile = Image.open(os.path.join(
+            self.datasetDir, self.imageListDir[self.imageSelection]))
 
         imageFile.thumbnail(self.default_size, Image.ANTIALIAS)
 
@@ -380,16 +397,19 @@ class tkteach:
         self.categoriesListbox.selection_clear(0, len(self.categories))
         self.cursor.execute('SELECT category_id, score FROM labels WHERE image_id = ?',
                             (self.db_getImageID(self.imageListDir[self.imageSelection]),))
-        
-        category_score = self.cursor.fetchone()
 
-        print(category_score)
+        category_score = self.cursor.fetchone()
         categoryName = self.db_getCategoryName(category_score[0])
+
+        self.cursor.execute('SELECT semantic_name FROM images WHERE image_path = ?', (self.imageListDir[self.imageSelection],))
+        semanticName = self.cursor.fetchone()[0]
+        semanticName = [semanticName,  'NULL'][semanticName is None]
         try:
             self.categoriesListbox.selection_set(
                 self.categories.index(categoryName))
             self.categoryTop01Label.config(text=categoryName)
             self.categoryTop01Score.config(text=f'{category_score[1]:.2f}')
+            self.semanticLabel.config(text=semanticName)
         except ValueError:
             self.statusBar.config(
                 text="FATAL ERROR! Image is saved with invalid category.")
@@ -408,23 +428,26 @@ class tkteach:
 
         categoryId = self.db_getCategoryID(self.categories[cati])
 
-        oldCategoryId = self.cursor.execute('SELECT category_id from labels where image_id = ?', (imageId, )).fetchone()[0]
-        
+        oldCategoryId = self.cursor.execute(
+            'SELECT category_id from labels where image_id = ?', (imageId, )).fetchone()[0]
+
         if (categoryId == oldCategoryId):
             return
 
         # Clear out existing category labels for the image...
-        self.cursor.execute('DELETE FROM labels WHERE image_id = ?', (imageId,))
+        self.cursor.execute(
+            'DELETE FROM labels WHERE image_id = ?', (imageId,))
 
         # Insert new category labels for the image...
-        self.cursor.execute('INSERT INTO labels(image_id, category_id, score) VALUES(?, ?, ?)', (imageId, categoryId, 1,))
-        
+        self.cursor.execute(
+            'INSERT INTO labels(image_id, category_id, score) VALUES(?, ?, ?)', (imageId, categoryId, 1,))
+
         self.db.commit()
 
         self.prevCategoryId = categoryId
 
     def savePrevImageCategorization(self):
-        print("-->savePrevImageCategorization")
+        print("-->savePrevImageCategorization", self.prevCategoryId)
 
         if self.prevCategoryId is None:
             print('---> Error: previous category id is None')
@@ -434,17 +457,24 @@ class tkteach:
 
         categoryId = self.prevCategoryId
 
-        oldCategoryId = self.cursor.execute('SELECT category_id from labels where image_id = ?', (imageId, )).fetchone()[0]
-        
+        oldCategoryId = self.cursor.execute(
+            'SELECT category_id from labels where image_id = ?', (imageId, )).fetchone()[0]
+
         if (categoryId == oldCategoryId):
             return
 
+        print(imageId)
+
         # Clear out existing category labels for the image...
-        self.cursor.execute('DELETE FROM labels WHERE image_id = ?', (imageId,))
+        self.cursor.execute(
+            'DELETE FROM labels WHERE image_id = ?', (imageId,))
+
+        print("-->savePrevImageCategorization", categoryId)
 
         # Insert new category labels for the image...
-        self.cursor.execute('INSERT INTO labels(image_id, category_id, score) VALUES(?, ?, ?)', (imageId, categoryId, 1,))
-        
+        self.cursor.execute(
+            'INSERT INTO labels(image_id, category_id, score) VALUES(?, ?, ?)', (imageId, categoryId, 1,))
+
         self.db.commit()
 
     def skipToImage(self):
@@ -468,8 +498,10 @@ class tkteach:
         # Check to see if selection has been made
         try:
             metadf = pd.read_csv(self.datasetFilename, low_memory=False)
-            metadf = metadf[['image_path', 'category_top01', 'category_top01_score']].sort_values(by=['image_path'], ascending=True)
-            metadf.drop_duplicates(subset='image_path', keep=False, inplace=True)
+            metadf = metadf[['image_path', 'category_top01', 'category_top01_score',
+                             'semantic_name']].sort_values(by=['image_path'], ascending=True)
+            metadf.drop_duplicates(subset='image_path',
+                                   keep=False, inplace=True)
             print("-->samples\n", metadf.head(5))
         except IOError:
             print("ERROR! Cannot read file: ", self.datasetFilename)
@@ -482,16 +514,22 @@ class tkteach:
             for imagei in range(len(self.imageListDir)):
                 self.cursor.execute('INSERT OR IGNORE INTO images(image_path) VALUES(?)', (str(
                     self.imageListDir[imagei]),))
+
             metadf.apply(
                 lambda row: self.cursor.execute(
                     'INSERT OR IGNORE INTO labels(category_id, image_id, score) VALUES(?, ?, ?)',
-                    (self.db_getCategoryID('/' + row['category_top01'][0] + '/' + row['category_top01']), self.db_getImageID(row['image_path']), row['category_top01_score'], )
+                    (self.db_getCategoryID('/' + row['category_top01'][0] + '/' + row['category_top01']),
+                     self.db_getImageID(row['image_path']), row['category_top01_score'], )
                 ),
                 axis=1,
             )
 
-            self.db.commit()
+            metadf[['semantic_name', 'image_path']].apply(lambda row: self.cursor.execute(
+                'UPDATE images SET semantic_name = ? WHERE image_path = ?',
+                (row['semantic_name'], row['image_path'],)
+            ), axis=1,)
 
+            self.db.commit()
 
             # Prepare image stage:
             self.imageNumberInput.delete(0, tk.END)
@@ -538,14 +576,17 @@ class tkteach:
         self.cursor.execute(
             'SELECT id FROM categories WHERE category_name = ?', (categoryStr,))
         return self.cursor.fetchone()[0]
-    
+
     def db_getImagePath(self, imageId):
-        self.cursor.execute('SELECT image_path FROM images WHERE id = ?', (str(imageId),))
+        self.cursor.execute(
+            'SELECT image_path FROM images WHERE id = ?', (str(imageId),))
         return self.cursor.fetchone()[0]
-    
+
     def db_getCategoryName(self, categoryId):
-        self.cursor.execute('SELECT category_name FROM categories WHERE id = ?', (str(categoryId),))
+        self.cursor.execute(
+            'SELECT category_name FROM categories WHERE id = ?', (str(categoryId),))
         return self.cursor.fetchone()[0]
+
 
 if __name__ == "__main__":
     root = tk.Tk()
